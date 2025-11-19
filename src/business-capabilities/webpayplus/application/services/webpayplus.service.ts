@@ -6,6 +6,8 @@ import { WebpayPlusCreateDto } from '@business-capabilities/webpayplus/domain/dt
 import { WebpayPlusCreateResponseDto } from '@business-capabilities/webpayplus/domain/dtos/webpayplus-create.response.dto';
 import { WebpayPlusCommitDto } from '@business-capabilities/webpayplus/domain/dtos/webpayplus-commit.dto';
 import { WebpayPlusCommitResponseDto } from '@business-capabilities/webpayplus/domain/dtos/webpayplus-commit.response.dto';
+import { WebpayPlusStatusDto } from '@business-capabilities/webpayplus/domain/dtos/webpayplus-status.dto';
+import { WebpayPlusStatusResponseDto } from '@business-capabilities/webpayplus/domain/dtos/webpayplus-status.response.dto';
 
 @Injectable()
 export class WebpayPlusService {
@@ -36,5 +38,17 @@ export class WebpayPlusService {
       context,
     });
     return this.adapter.commit(payload);
+  }
+
+  async status(
+    payload: WebpayPlusStatusDto,
+  ): Promise<WebpayPlusStatusResponseDto> {
+    const context = WebpayPlusService.name;
+    this.logger.Information({
+      message: `Start ${context} status`,
+      eventId: INFORMATION.JSON_PLACE_HOLDER_SERVICE,
+      context,
+    });
+    return this.adapter.status(payload);
   }
 }

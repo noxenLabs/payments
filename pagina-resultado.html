@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado del Pago - Webpay Plus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .loading {
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .loading p {
+            color: #666;
+        }
+        
+        .result {
+            display: none;
+        }
+        
+        .success {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #28a745;
+            border-radius: 10px;
+            padding: 30px;
+        }
+        
+        .success h2 {
+            color: #155724;
+            margin-bottom: 20px;
+        }
+        
+        .error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 30px;
+        }
+        
+        .error h2 {
+            color: #721c24;
+            margin-bottom: 20px;
+        }
+        
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .detail {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            color: #0d47a1;
+            font-size: 14px;
+        }
+        
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+        
+        details {
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        
+        summary {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Estado de carga -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <h2>Procesando tu pago</h2>
+            <p>Por favor espera mientras confirmamos tu transacción con el banco...</p>
+            <div class="info-box" style="margin-top: 30px; text-align: left;">
+                <p><strong>ℹ️ ¿Qué está pasando?</strong></p>
+                <p>✓ Retorno desde Webpay detectado</p>
+                <p>⏳ Confirmando transacción...</p>
+            </div>
+        </div>
+
+        <!-- Resultado -->
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        // Configuración - IMPORTANTE: Cambia esto según tu ambiente
+        const API_URL = 'http://localhost:3000';
+        
+        /**
+         * Función principal que se ejecuta al cargar la página
+         */
+        async function procesarPago() {
+            console.log('═══════════════════════════════════════════');
+            console.log('🔙 Retorno desde Webpay detectado');
+            console.log('═══════════════════════════════════════════');
+
+            // 1. Obtener token_ws de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const token_ws = urlParams.get('token_ws');
+
+            console.log('Token recibido:', token_ws);
+
+            // Validar que existe el token
+            if (!token_ws) {
+                console.error('❌ No se recibió token_ws');
+                mostrarError(
+                    'No se recibió token de Webpay',
+                    'Esto puede ocurrir si:<br>• Cancelaste el pago<br>• Hubo un error en Webpay<br>• Accediste directamente a esta página'
+                );
+                return;
+            }
+
+            try {
+                console.log('📤 Enviando solicitud de confirmación...');
+
+                // 2. Llamar al endpoint /commit
+                const response = await fetch(`${API_URL}/commit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'channel-id': 'web',
+                        'transaction-id': 'TX-RESULT-' + Date.now()
+                    },
+                    body: JSON.stringify({ token: token_ws })
+                });
+
+                console.log('📡 Respuesta recibida:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('❌ Error en respuesta:', errorData);
+                    throw new Error(errorData.message || `Error HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('✅ Datos de confirmación:', data);
+
+                // 3. Mostrar resultado según el estado
+                if (data.status === 'AUTHORIZED') {
+                    console.log('🎉 Pago APROBADO');
+                    mostrarExito(data);
+                } else {
+                    console.log('❌ Pago RECHAZADO');
+                    mostrarRechazo(data);
+                }
+
+                // Limpiar la URL para no mostrar el token
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+            } catch (error) {
+                console.error('❌ Error al procesar:', error);
+                
+                let errorMsg = error.message;
+                let errorDetail = '';
+
+                // Mensajes de error más amigables
+                if (errorMsg.includes('Invalid status')) {
+                    errorDetail = 'La transacción no se pudo completar correctamente.';
+                } else if (errorMsg.includes('Failed to fetch')) {
+                    errorDetail = 'No se pudo conectar con el servidor. Verifica que la API esté corriendo.';
+                } else if (errorMsg.includes('404')) {
+                    errorDetail = 'Transacción no encontrada. El token puede haber expirado.';
+                }
+
+                mostrarError('Error al procesar el pago', errorDetail || errorMsg);
+            }
+        }
+
+        /**
+         * Muestra resultado de pago exitoso
+         */
+        function mostrarExito(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').innerHTML = `
+                <div class="success">
+                    <div class="icon">✅</div>
+                    <h2>¡Pago Exitoso!</h2>
+                    <p style="text-align: center; color: #155724; margin-bottom: 20px;">
+                        Tu transacción ha sido aprobada correctamente
+                    </p>
+                    
+                    <div class="detail">
+                        <div class="detail-row">
+                            <span class="detail-label">🔐 Código de Autorización:</span>
+                            <span class="detail-value">${data.authorizationCode}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">📋 Orden de Compra:</span>
+                            <span class="detail-value">${data.buyOrder}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">💰 Monto Pagado:</span>
+                            <span class="detail-value">$${Number(data.amount).toLocaleString('es-CL')} CLP</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">🔑 ID de Sesión:</span>
+                            <span class="detail-value">${data.sessionId}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">✅ Estado:</span>
+                            <span class="detail-value" style="color: #28a745; font-weight: bold;">
+                                ${data.status}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <p><strong>✓ ¿Qué sigue?</strong></p>
+                        <p>• Guarda tu código de autorización: <strong>${data.authorizationCode}</strong></p>
+                        <p>• Recibirás un comprobante de pago</p>
+                        <p>• Puedes cerrar esta ventana</p>
+                    </div>
+                    
+                    <details>
+                        <summary>Ver detalles técnicos (JSON)</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                    
+                    <button onclick="window.location.href='/'">
+                        🏠 Volver al inicio
+                    </button>
+                </div>
+            `;
+        }
+
+        /**
+         * Muestra resultado de pago rechazado
+         */
+        function mostrarRechazo(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').innerHTML = `
+                <div class="error">
+                    <div class="icon">❌</div>
+                    <h2>Pago Rechazado</h2>
+                    <p style="text-align: center; color: #721c24; margin-bottom: 20px;">
+                        Tu pago no pudo ser procesado
+                    </p>
+                    
+                    <div class="detail">
+                        <div class="detail-row">
+                            <span class="detail-label">📋 Orden de Compra:</span>
+                            <span class="detail-value">${data.buyOrder}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">💰 Monto:</span>
+                            <span class="detail-value">$${Number(data.amount).toLocaleString('es-CL')} CLP</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">❌ Estado:</span>
+                            <span class="detail-value" style="color: #dc3545; font-weight: bold;">
+                                ${data.status}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <p><strong>💡 Posibles causas:</strong></p>
+                        <p>• Fondos insuficientes en la tarjeta</p>
+                        <p>• Tarjeta bloqueada o con problemas</p>
+                        <p>• Datos incorrectos ingresados</p>
+                        <p>• Límite de compra excedido</p>
+                    </div>
+                    
+                    <details>
+                        <summary>Ver detalles técnicos (JSON)</summary>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </details>
+                    
+                    <button onclick="window.location.href='/'">
+                        🔄 Intentar nuevamente
+                    </button>
+                </div>
+            `;
+        }
+
+        /**
+         * Muestra mensaje de error
+         */
+        function mostrarError(titulo, detalle) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('result').innerHTML = `
+                <div class="error">
+                    <div class="icon">⚠️</div>
+                    <h2>${titulo}</h2>
+                    <p style="text-align: center; color: #721c24; margin: 20px 0;">
+                        ${detalle}
+                    </p>
+                    
+                    <div class="info-box">
+                        <p><strong>🔧 ¿Qué puedes hacer?</strong></p>
+                        <p>• Verifica que la API esté corriendo en ${API_URL}</p>
+                        <p>• Revisa la consola del navegador (F12) para más detalles</p>
+                        <p>• Intenta realizar una nueva transacción</p>
+                    </div>
+                    
+                    <button onclick="window.location.href='/'">
+                        🏠 Volver al inicio
+                    </button>
+                </div>
+            `;
+        }
+
+        // ========================================
+        // EJECUTAR AL CARGAR LA PÁGINA
+        // ========================================
+        window.addEventListener('load', procesarPago);
+    </script>
+</body>
+</html>

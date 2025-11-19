@@ -12,6 +12,15 @@ export class Server {
   async setup(): Promise<void> {
     EnvValues.get();
     const app = await NestFactory.create(AppModule);
+    
+    // Habilitar CORS para permitir peticiones desde el navegador
+    app.enableCors({
+      origin: true, // Permite todos los orígenes en desarrollo
+      credentials: true,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: 'Content-Type,Accept,Authorization,channel-id,transaction-id',
+    });
+    
     new ScalarClient().register(app);
     app.useLogger(app.get(Logger));
     const basePath = EnvValues.get().GLOBAL_PREFIX;
