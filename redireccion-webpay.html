@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirección a Webpay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            font-family: monospace;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin-top: 20px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        code {
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Redirección a Webpay</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Instrucciones:</strong><br>
+            1. Llama al endpoint <code>POST /create</code> desde Scalar<br>
+            2. Copia el <code>token</code> y la <code>url</code> de la respuesta<br>
+            3. Pégalos en los campos de abajo<br>
+            4. Haz clic en "Ir a Webpay"
+        </div>
+
+        <div class="form-group">
+            <label>Token (del endpoint /create):</label>
+            <textarea id="token" placeholder="Ejemplo: e074d38c628122c63e5c0986368ece22974d6fee1440617d85873b7b4efa48a3"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>URL de Webpay (del endpoint /create):</label>
+            <input type="text" id="url" value="https://webpay3gint.transbank.cl/webpayserver/initTransaction" placeholder="URL de Webpay">
+        </div>
+
+        <button onclick="irAWebpay()">🚀 Ir a Webpay</button>
+
+        <div class="warning">
+            <strong>⚠️ Importante:</strong><br>
+            • Asegúrate de haber configurado un <code>returnUrl</code> público (usa ngrok en desarrollo)<br>
+            • El token expira en 10 minutos<br>
+            • En Webpay usa: RUT <code>11.111.111-1</code>, Clave <code>123</code><br>
+            • Tarjeta de prueba: <code>4051885600446623</code>, CVV <code>123</code>
+        </div>
+
+        <h3>📋 Respuesta completa de /create (para referencia):</h3>
+        <pre id="ejemplo">
+{
+  "token": "e074d38c628122c63e5c0986368ece22974d6fee1440617d85873b7b4efa48a3",
+  "url": "https://webpay3gint.transbank.cl/webpayserver/initTransaction"
+}</pre>
+    </div>
+
+    <form id="webpayForm" method="POST" style="display: none;">
+        <input type="hidden" name="token_ws" id="token_ws">
+    </form>
+
+    <script>
+        function irAWebpay() {
+            const token = document.getElementById('token').value.trim();
+            const url = document.getElementById('url').value.trim();
+
+            if (!token) {
+                alert('❌ Por favor ingresa el token que obtuviste del endpoint /create');
+                return;
+            }
+
+            if (!url) {
+                alert('❌ Por favor ingresa la URL de Webpay');
+                return;
+            }
+
+            console.log('🚀 Redirigiendo a Webpay...');
+            console.log('Token:', token);
+            console.log('URL:', url);
+
+            const form = document.getElementById('webpayForm');
+            form.action = url;
+            document.getElementById('token_ws').value = token;
+            
+            form.submit();
+        }
+
+        // Si hay parámetros en la URL, mostrarlos
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const url = urlParams.get('url');
+
+            if (token) {
+                document.getElementById('token').value = token;
+            }
+            if (url) {
+                document.getElementById('url').value = url;
+            }
+        });
+    </script>
+</body>
+</html>
+
