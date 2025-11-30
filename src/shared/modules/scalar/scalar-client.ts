@@ -10,16 +10,18 @@ export class ScalarClient {
   register(app: INestApplication) {
     const document = SwaggerModule.createDocument(app, GenerateDocumentBuilder());
     const prefix = EnvValues.get().GLOBAL_PREFIX;
+    // Normalizar el prefijo: eliminar slashes al inicio y final
+    const normalizedPrefix = prefix.replace(/^\/+|\/+$/g, '');
+    
     const processedDocument = {
       ...document,
       paths: Object.entries(document.paths).reduce((acc, [path, methods]) => {
         if (path.includes('/Health')) {
           acc[path] = methods;
         } else {
-          const newPath = `/${prefix}${path}`;
+          // Construir la ruta correctamente sin doble slash
+          const newPath = `/${normalizedPrefix}${path}`;
           acc[newPath] = methods;
-
-          prefix.toString()
         }
         return acc;
       }, {})

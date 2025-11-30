@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { LoggerFactory } from '@shared/modules/logger/logger-factory';
 import { ERROR, INFORMATION } from '@shared/environment/event-id.constants';
 import { WebpayPlusPort } from '@business-capabilities/webpayplus/application/ports/webpayplus.ports';
@@ -57,7 +57,14 @@ export class WebpayPlusAdapter implements WebpayPlusPort {
         eventId: ERROR.JSON_PLACE_HOLDER_ADAPTER,
         context,
       });
-      throw error;
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          message: 'Error al crear la transacción con Webpay Plus',
+          error: error?.message || 'Unprocessable Entity',
+        },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
   }
 
